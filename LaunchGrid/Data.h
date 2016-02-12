@@ -132,7 +132,7 @@ void findFiles(std::wstring prefix, std::wstring nameTemplate, const std::wstrin
 			}
 			do
 			{
-				if (((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) == directory && wcscmp(data.cFileName, L".") && wcscmp(data.cFileName, L".."))
+				if (wcscmp(data.cFileName, L".") && wcscmp(data.cFileName, L".."))
 				{
 					findFiles(prefix + data.cFileName, nameTemplate, variable, components, i + 1, directory, r);
 				}
@@ -151,18 +151,20 @@ void findFiles(std::wstring prefix, std::wstring nameTemplate, const std::wstrin
 	if (find != INVALID_HANDLE_VALUE)
 	{
 		FindClose(find);
-
-		if (nameTemplate.empty())
+		if (((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) == directory)
 		{
-			r(prefix, prefix);
-		}
-		else
-		{
-			std::vector<std::wstring> nameComponents;
-			splitPath(prefix.c_str(), nameComponents);
+			if (nameTemplate.empty())
+			{
+				r(prefix, prefix);
+			}
+			else
+			{
+				std::vector<std::wstring> nameComponents;
+				splitPath(prefix.c_str(), nameComponents);
 
-			auto name = BaseOption::expandString(nameTemplate, std::map<std::wstring, std::wstring>({ { variable, prefix } }));
-			r(name, prefix);
+				auto name = BaseOption::expandString(nameTemplate, std::map<std::wstring, std::wstring>({ { variable, prefix } }));
+				r(name, prefix);
+			}
 		}
 	}
 }

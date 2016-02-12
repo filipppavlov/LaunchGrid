@@ -25,7 +25,8 @@ void log(const wchar_t* format, ...)
 		buffer[0] = 0;
 		vswprintf_s(buffer, size, format, args2);
 		wcscat_s(buffer, size, L"\r\n");
-		WriteFile(file, buffer, (length + 2) * sizeof(wchar_t), nullptr, nullptr);
+		DWORD written;
+		WriteFile(file, buffer, (length + 2) * sizeof(wchar_t), &written, nullptr);
 		delete[] buffer;
 	}
 	va_end(args1);

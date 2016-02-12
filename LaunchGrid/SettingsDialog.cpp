@@ -7,7 +7,7 @@ using namespace simplejson;
 
 namespace
 {
-	Value settings;
+	Value _settings;
 
 
 	BOOL CALLBACK AppearenceProc(HWND hwndDlg,
@@ -19,19 +19,19 @@ namespace
 		{
 		case WM_INITDIALOG:
 		{
-			bool bottomWindow = settings[L"general"][L"bottomWindow"].asNumber() != 0;
+			bool bottomWindow = _settings[L"general"][L"bottomWindow"].asNumber() != 0;
 			Button_SetCheck(dlgItem(bottomWindow ? IDC_BOTTOM_WINDOW : IDC_TOP_WINDOW), BST_CHECKED);
 			Button_Enable(dlgItem(IDC_AUTO_START), !bottomWindow ? FALSE : TRUE);
 			Button_Enable(dlgItem(IDC_DO_NOT_CLOSE), !bottomWindow ? TRUE : FALSE);
-			if (settings[L"general"][L"autoStart"])
+			if (_settings[L"general"][L"autoStart"])
 			{
 				Button_SetCheck(dlgItem(IDC_AUTO_START), BST_CHECKED);
 			}
-			if (settings[L"general"][L"doNotClose"])
+			if (_settings[L"general"][L"doNotClose"])
 			{
 				Button_SetCheck(dlgItem(IDC_DO_NOT_CLOSE), BST_CHECKED);
 			}
-			bool darkTheme = settings[L"general"][L"theme"].asNumber() != 0;
+			bool darkTheme = _settings[L"general"][L"theme"].asNumber() != 0;
 			Button_SetCheck(dlgItem(darkTheme ? IDC_DARK_THEME : IDC_LIGHT_THEME), TRUE);
 			return TRUE;
 		}
@@ -44,18 +44,18 @@ namespace
 				auto checked = IsDlgButtonChecked(hwndDlg, IDC_TOP_WINDOW);
 				Button_Enable(dlgItem(IDC_AUTO_START), checked ? FALSE : TRUE);
 				Button_Enable(dlgItem(IDC_DO_NOT_CLOSE), checked ? TRUE : FALSE);
-				settings.setDefault(L"general", Value::object())[L"bottomWindow"] = Value::number(checked ? 0.0 : 1.0);
+				_settings.setDefault(L"general", Value::object())[L"bottomWindow"] = Value::number(checked ? 0.0 : 1.0);
 				break;
 			}
 			case IDC_AUTO_START:
-				settings.setDefault(L"general", Value::object())[L"autoStart"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_AUTO_START) ? 1.0 : 0.0);
+				_settings.setDefault(L"general", Value::object())[L"autoStart"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_AUTO_START) ? 1.0 : 0.0);
 				break;
 			case IDC_DO_NOT_CLOSE:
-				settings.setDefault(L"general", Value::object())[L"doNotClose"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_DO_NOT_CLOSE) ? 1.0 : 0.0);
+				_settings.setDefault(L"general", Value::object())[L"doNotClose"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_DO_NOT_CLOSE) ? 1.0 : 0.0);
 				break;
 			case IDC_LIGHT_THEME:
 			case IDC_DARK_THEME:
-				settings.setDefault(L"general", Value::object())[L"theme"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_DARK_THEME) ? 1.0 : 0.0);
+				_settings.setDefault(L"general", Value::object())[L"theme"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_DARK_THEME) ? 1.0 : 0.0);
 				break;
 			default:
 				return FALSE;
@@ -93,7 +93,7 @@ namespace
 			ComboBox_AddString(dlgItem(IDC_VERB), L"print");
 			ComboBox_AddString(dlgItem(IDC_VERB), L"runas");
 
-			auto tabs = settings.setDefault(L"tabs", Value::array());
+			auto tabs = _settings.setDefault(L"tabs", Value::array());
 			if (tabs.length() == 0)
 			{
 				auto def = Value::object();
@@ -129,8 +129,8 @@ namespace
 					}
 					if (sel >= 0)
 					{
-						Edit_SetText(dlgItem(IDC_TAB_NAME), settings[L"tabs"][sel][L"name"].asString().c_str());
-						for (auto flag : settings[L"tabs"][sel][L"flags"])
+						Edit_SetText(dlgItem(IDC_TAB_NAME), _settings[L"tabs"][sel][L"name"].asString().c_str());
+						for (auto flag : _settings[L"tabs"][sel][L"flags"])
 						{
 							ListBox_AddString(dlgItem(IDC_FLAGS), flag[L"name"].asString().c_str());
 						}
@@ -155,7 +155,7 @@ namespace
 				ListBox_DeleteString(list, sel);
 				ListBox_InsertString(list, sel, name);
 				ListBox_SetCurSel(list, sel);
-				settings[L"tabs"][sel][L"name"] = Value::string(name);
+				_settings[L"tabs"][sel][L"name"] = Value::string(name);
 				break;
 			}
 			case IDC_TAB_ADD:
@@ -165,7 +165,7 @@ namespace
 				auto index = ListBox_AddString(list, name);
 				auto tab = Value::object();
 				tab[L"name"] = Value::string(L"name");
-				settings[L"tabs"].push(tab);
+				_settings[L"tabs"].push(tab);
 				tab[L"flags"] = Value::array();
 				tab[L"flags"].push(Value::object());
 				tab[L"flags"][size_t(0)][L"name"] = Value::string(L"App");
@@ -178,7 +178,7 @@ namespace
 			}
 			case IDC_TAB_REMOVE:
 			{
-				auto count = settings[L"tabs"].length();
+				auto count = _settings[L"tabs"].length();
 				if (count > 1)
 				{
 					if (MessageBox(hwndDlg, L"Remove tab?\nThis will remove all app and option settings for the tab.", L"Remove tab", MB_OKCANCEL | MB_ICONWARNING) == IDOK)
@@ -186,7 +186,7 @@ namespace
 						auto list = dlgItem(IDC_TABS);
 						auto sel = ListBox_GetCurSel(list);
 						ListBox_DeleteString(list, sel);
-						settings[L"tabs"].remove(size_t(sel));
+						_settings[L"tabs"].remove(size_t(sel));
 						if (sel < int(count) - 1)
 						{
 							ListBox_SetCurSel(list, sel);
@@ -207,9 +207,9 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel > 0)
 				{
-					std::swap(settings[L"tabs"][sel], settings[L"tabs"][sel - 1]);
+					std::swap(_settings[L"tabs"][sel], _settings[L"tabs"][sel - 1]);
 					ListBox_DeleteString(list, sel - 1);
-					ListBox_InsertString(list, sel, settings[L"tabs"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"tabs"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel - 1);
 					if (sel == 1)
 					{
@@ -226,9 +226,9 @@ namespace
 				auto count = ListBox_GetCount(list);
 				if (sel + 1 < count)
 				{
-					std::swap(settings[L"tabs"][sel], settings[L"tabs"][sel + 1]);
+					std::swap(_settings[L"tabs"][sel], _settings[L"tabs"][sel + 1]);
 					ListBox_DeleteString(list, sel + 1);
-					ListBox_InsertString(list, sel, settings[L"tabs"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"tabs"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel + 1);
 					if (sel + 2 >= count)
 					{
@@ -245,15 +245,15 @@ namespace
 				{
 					auto tab = ListBox_GetCurSel(dlgItem(IDC_TABS));
 					auto flag = ListBox_GetCurSel(dlgItem(IDC_FLAGS));
-					Edit_SetText(dlgItem(IDC_FLAG_NAME), settings[L"tabs"][tab][L"flags"][flag][L"name"].asString().c_str());
-					Edit_SetText(dlgItem(IDC_FLAG_TYPE), settings[L"tabs"][tab][L"flags"][flag][L"type"].asString().c_str());
-					ComboBox_SetCurSel(dlgItem(IDC_FLAG_POSITION), int(settings[L"tabs"][tab][L"flags"][flag][L"position"].asNumber()));
+					Edit_SetText(dlgItem(IDC_FLAG_NAME), _settings[L"tabs"][tab][L"flags"][flag][L"name"].asString().c_str());
+					Edit_SetText(dlgItem(IDC_FLAG_TYPE), _settings[L"tabs"][tab][L"flags"][flag][L"type"].asString().c_str());
+					ComboBox_SetCurSel(dlgItem(IDC_FLAG_POSITION), int(_settings[L"tabs"][tab][L"flags"][flag][L"position"].asNumber()));
 
 					while (ListBox_GetCount(dlgItem(IDC_VALUES)))
 					{
 						ListBox_DeleteString(dlgItem(IDC_VALUES), 0);
 					}
-					auto values = settings[L"tabs"][tab][L"flags"][flag][L"values"];
+					auto values = _settings[L"tabs"][tab][L"flags"][flag][L"values"];
 					for (auto value : values)
 					{
 						ListBox_AddString(dlgItem(IDC_VALUES), value[L"name"].asString().c_str());
@@ -265,7 +265,7 @@ namespace
 					SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_VALUES, LBN_SELCHANGE), 0);
 					Button_Enable(dlgItem(IDC_FLAG_UP), flag > 0);
 					Button_Enable(dlgItem(IDC_FLAG_DOWN), flag + 1 < ListBox_GetCount(dlgItem(IDC_FLAGS)));
-					bool isApp = settings[L"tabs"][tab][L"flags"][flag][L"type"].asString() == L"app";
+					bool isApp = _settings[L"tabs"][tab][L"flags"][flag][L"type"].asString() == L"app";
 					Button_Enable(dlgItem(IDC_FLAG_REMOVE), !isApp);
 					Static_SetText(dlgItem(IDC_VALUE_VALUE_LABEL), isApp ? L"Command" : L"Value");
 					ShowWindow(dlgItem(IDC_ARGS_LABEL), isApp ? SW_SHOWNA : SW_HIDE);
@@ -287,14 +287,14 @@ namespace
 				ListBox_DeleteString(list, sel);
 				ListBox_InsertString(list, sel, name);
 				ListBox_SetCurSel(list, sel);
-				settings[L"tabs"][tab][L"flags"][sel][L"name"] = Value::string(name);
+				_settings[L"tabs"][tab][L"flags"][sel][L"name"] = Value::string(name);
 				break;
 			}
 			case IDC_FLAG_POSITION:
 			{
 				auto tab = ListBox_GetCurSel(dlgItem(IDC_TABS));
 				auto flag = ListBox_GetCurSel(dlgItem(IDC_FLAGS));
-				settings[L"tabs"][tab][L"flags"][flag][L"position"] = Value::number(ComboBox_GetCurSel(dlgItem(IDC_FLAG_POSITION)));
+				_settings[L"tabs"][tab][L"flags"][flag][L"position"] = Value::number(ComboBox_GetCurSel(dlgItem(IDC_FLAG_POSITION)));
 				break;
 			}
 			case IDC_FLAG_ADD:
@@ -314,9 +314,9 @@ namespace
 				flag[L"type"] = Value::string(L"flag");
 				flag[L"position"] = Value::number(0);
 				flag[L"values"] = Value::array();
-				settings[L"tabs"][tab][L"flags"].push(flag);
+				_settings[L"tabs"][tab][L"flags"].push(flag);
 				ListBox_AddString(dlgItem(IDC_FLAGS), L"name");
-				ListBox_SetCurSel(dlgItem(IDC_FLAGS), settings[L"tabs"][tab][L"flags"].length() - 1);
+				ListBox_SetCurSel(dlgItem(IDC_FLAGS), _settings[L"tabs"][tab][L"flags"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_FLAGS, LBN_SELCHANGE), 0);
 				break;
 			}
@@ -327,9 +327,9 @@ namespace
 				flag[L"name"] = Value::string(L"name");
 				flag[L"type"] = Value::string(L"dir");
 				flag[L"position"] = Value::number(0);
-				settings[L"tabs"][tab][L"flags"].push(flag);
+				_settings[L"tabs"][tab][L"flags"].push(flag);
 				ListBox_AddString(dlgItem(IDC_FLAGS), L"name");
-				ListBox_SetCurSel(dlgItem(IDC_FLAGS), settings[L"tabs"][tab][L"flags"].length() - 1);
+				ListBox_SetCurSel(dlgItem(IDC_FLAGS), _settings[L"tabs"][tab][L"flags"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_FLAGS, LBN_SELCHANGE), 0);
 				break;
 			}
@@ -340,9 +340,9 @@ namespace
 				flag[L"name"] = Value::string(L"name");
 				flag[L"type"] = Value::string(L"file");
 				flag[L"position"] = Value::number(0);
-				settings[L"tabs"][tab][L"flags"].push(flag);
+				_settings[L"tabs"][tab][L"flags"].push(flag);
 				ListBox_AddString(dlgItem(IDC_FLAGS), L"name");
-				ListBox_SetCurSel(dlgItem(IDC_FLAGS), settings[L"tabs"][tab][L"flags"].length() - 1);
+				ListBox_SetCurSel(dlgItem(IDC_FLAGS), _settings[L"tabs"][tab][L"flags"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_FLAGS, LBN_SELCHANGE), 0);
 				break;
 			}
@@ -351,12 +351,12 @@ namespace
 				auto list = dlgItem(IDC_FLAGS);
 				auto tab = ListBox_GetCurSel(dlgItem(IDC_TABS));
 				auto sel = ListBox_GetCurSel(list);
-				if (settings[L"tabs"][tab][L"flags"][sel][L"type"].asString() != L"app")
+				if (_settings[L"tabs"][tab][L"flags"][sel][L"type"].asString() != L"app")
 				{
 					if (MessageBox(hwndDlg, L"Remove flag?", L"Remove flag", MB_OKCANCEL | MB_ICONWARNING) == IDOK)
 					{
 						ListBox_DeleteString(list, sel);
-						settings[L"tabs"][tab][L"flags"].remove(size_t(sel));
+						_settings[L"tabs"][tab][L"flags"].remove(size_t(sel));
 						if (sel < ListBox_GetCount(list) - 1)
 						{
 							ListBox_SetCurSel(list, sel);
@@ -377,9 +377,9 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel > 0)
 				{
-					std::swap(settings[L"tabs"][tab][L"flags"][sel - 1], settings[L"tabs"][tab][L"flags"][sel]);
+					std::swap(_settings[L"tabs"][tab][L"flags"][sel - 1], _settings[L"tabs"][tab][L"flags"][sel]);
 					ListBox_DeleteString(list, sel - 1);
-					ListBox_InsertString(list, sel, settings[L"tabs"][tab][L"flags"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"tabs"][tab][L"flags"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel - 1);
 					if (sel == 1)
 					{
@@ -397,9 +397,9 @@ namespace
 				auto count = ListBox_GetCount(list);
 				if (sel + 1 < count)
 				{
-					std::swap(settings[L"tabs"][tab][L"flags"][sel + 1], settings[L"tabs"][tab][L"flags"][sel]);
+					std::swap(_settings[L"tabs"][tab][L"flags"][sel + 1], _settings[L"tabs"][tab][L"flags"][sel]);
 					ListBox_DeleteString(list, sel + 1);
-					ListBox_InsertString(list, sel, settings[L"tabs"][tab][L"flags"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"tabs"][tab][L"flags"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel + 1);
 					if (sel + 2 >= count)
 					{
@@ -418,8 +418,8 @@ namespace
 					auto value = ListBox_GetCurSel(dlgItem(IDC_VALUES));
 					if (tab >= 0 && flag >= 0 && value >= 0)
 					{
-						Edit_SetText(dlgItem(IDC_VALUE_NAME), settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"name"].asString().c_str());
-						Edit_SetText(dlgItem(IDC_VALUE_VALUE), settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"value"].asString().c_str());
+						Edit_SetText(dlgItem(IDC_VALUE_NAME), _settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"name"].asString().c_str());
+						Edit_SetText(dlgItem(IDC_VALUE_VALUE), _settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"value"].asString().c_str());
 					}
 					else
 					{
@@ -429,12 +429,12 @@ namespace
 					Button_Enable(dlgItem(IDC_VALUE_UP), value > 0);
 					Button_Enable(dlgItem(IDC_VALUE_DOWN), value + 1 < ListBox_GetCount(dlgItem(IDC_VALUES)));
 					Button_Enable(dlgItem(IDC_VALUE_REMOVE), ListBox_GetCount(dlgItem(IDC_VALUES)) > 1);
-					bool isApp = settings[L"tabs"][tab][L"flags"][flag][L"type"].asString() == L"app";
+					bool isApp = _settings[L"tabs"][tab][L"flags"][flag][L"type"].asString() == L"app";
 					if (isApp)
 					{
-						Edit_SetText(dlgItem(IDC_ARGS), settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"args"].asString().c_str());
-						ComboBox_SetText(dlgItem(IDC_VERB), settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"verb"].asString().c_str());
-						Button_SetCheck(dlgItem(IDC_HIDDEN), settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"hidden"].asNumber() != 0);
+						Edit_SetText(dlgItem(IDC_ARGS), _settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"args"].asString().c_str());
+						ComboBox_SetText(dlgItem(IDC_VERB), _settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"verb"].asString().c_str());
+						Button_SetCheck(dlgItem(IDC_HIDDEN), _settings[L"tabs"][tab][L"flags"][flag][L"values"][value][L"hidden"].asNumber() != 0);
 					}
 					break;
 				}
@@ -446,9 +446,9 @@ namespace
 				auto value = Value::object();
 				value[L"name"] = Value::string(L"name");
 				value[L"value"] = Value::string(L"");
-				settings[L"tabs"][tab][L"flags"][flag].setDefault(L"values", Value::array()).push(value);
+				_settings[L"tabs"][tab][L"flags"][flag].setDefault(L"values", Value::array()).push(value);
 				ListBox_AddString(dlgItem(IDC_VALUES), L"name");
-				ListBox_SetCurSel(dlgItem(IDC_VALUES), settings[L"tabs"][tab][L"flags"][flag][L"values"].length() - 1);
+				ListBox_SetCurSel(dlgItem(IDC_VALUES), _settings[L"tabs"][tab][L"flags"][flag][L"values"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_VALUES, LBN_SELCHANGE), 0);
 				break;
 			}
@@ -463,7 +463,7 @@ namespace
 					if (MessageBox(hwndDlg, L"Remove value?", L"Remove value", MB_OKCANCEL | MB_ICONWARNING) == IDOK)
 					{
 						ListBox_DeleteString(list, sel);
-						settings[L"tabs"][tab][L"flags"][flag][L"values"].remove(size_t(sel));
+						_settings[L"tabs"][tab][L"flags"][flag][L"values"].remove(size_t(sel));
 						if (sel < ListBox_GetCount(list) - 1)
 						{
 							ListBox_SetCurSel(list, sel);
@@ -485,9 +485,9 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel > 0)
 				{
-					std::swap(settings[L"tabs"][tab][L"flags"][flag][L"values"][sel], settings[L"tabs"][tab][L"flags"][flag][L"values"][sel - 1]);
+					std::swap(_settings[L"tabs"][tab][L"flags"][flag][L"values"][sel], _settings[L"tabs"][tab][L"flags"][flag][L"values"][sel - 1]);
 					ListBox_DeleteString(list, sel - 1);
-					ListBox_InsertString(list, sel, settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel - 1);
 					if (sel == 1)
 					{
@@ -506,9 +506,9 @@ namespace
 				auto count = ListBox_GetCount(list);
 				if (sel + 1 < count)
 				{
-					std::swap(settings[L"tabs"][tab][L"flags"][flag][L"values"][sel], settings[L"tabs"][tab][L"flags"][flag][L"values"][sel + 1]);
+					std::swap(_settings[L"tabs"][tab][L"flags"][flag][L"values"][sel], _settings[L"tabs"][tab][L"flags"][flag][L"values"][sel + 1]);
 					ListBox_DeleteString(list, sel + 1);
-					ListBox_InsertString(list, sel, settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel + 1);
 					if (sel + 2 >= count)
 					{
@@ -531,7 +531,7 @@ namespace
 					ListBox_DeleteString(list, sel);
 					ListBox_InsertString(list, sel, name);
 					ListBox_SetCurSel(list, sel);
-					settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"name"] = Value::string(name);
+					_settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"name"] = Value::string(name);
 				}
 				break;
 			}
@@ -543,7 +543,7 @@ namespace
 				Edit_GetText(dlgItem(IDC_VALUE_VALUE), name, 512);
 				auto list = dlgItem(IDC_VALUES);
 				auto sel = ListBox_GetCurSel(list);
-				settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"value"] = Value::string(name);
+				_settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"value"] = Value::string(name);
 				break;
 			}
 			case IDC_ARGS:
@@ -554,7 +554,7 @@ namespace
 				Edit_GetText(dlgItem(IDC_ARGS), name, 512);
 				auto list = dlgItem(IDC_VALUES);
 				auto sel = ListBox_GetCurSel(list);
-				settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"args"] = Value::string(name);
+				_settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"args"] = Value::string(name);
 				break;
 			}
 			case IDC_VERB:
@@ -565,7 +565,7 @@ namespace
 				Edit_GetText(dlgItem(IDC_VERB), verb, 512);
 				auto list = dlgItem(IDC_VALUES);
 				auto sel = ListBox_GetCurSel(list);
-				settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"verb"] = Value::string(verb);
+				_settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"verb"] = Value::string(verb);
 				break;
 			}
 			case IDC_HIDDEN:
@@ -573,7 +573,7 @@ namespace
 				auto tab = ListBox_GetCurSel(dlgItem(IDC_TABS));
 				auto flag = ListBox_GetCurSel(dlgItem(IDC_FLAGS));
 				auto sel = ListBox_GetCurSel(dlgItem(IDC_VALUES));
-				settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"hidden"] = Value::number(Button_GetCheck(dlgItem(IDC_HIDDEN)) ? 1.0 : 0.0);
+				_settings[L"tabs"][tab][L"flags"][flag][L"values"][sel][L"hidden"] = Value::number(Button_GetCheck(dlgItem(IDC_HIDDEN)) ? 1.0 : 0.0);
 				break;
 			}
 			}
@@ -596,7 +596,7 @@ namespace
 			ComboBox_AddString(dlgItem(IDC_MENU_VERB), L"print");
 			ComboBox_AddString(dlgItem(IDC_MENU_VERB), L"runas");
 
-			auto menu = settings[L"menu"];
+			auto menu = _settings[L"menu"];
 			auto menuWnd = dlgItem(IDC_MENU_ITEMS);
 			for (auto item : menu)
 			{
@@ -620,11 +620,11 @@ namespace
 				{
 				case LBN_SELCHANGE:
 					auto sel = ListBox_GetCurSel(dlgItem(IDC_MENU_ITEMS));
-					Edit_SetText(dlgItem(IDC_MENU_NAME), settings[L"menu"][sel][L"name"].asString().c_str());
-					Edit_SetText(dlgItem(IDC_MENU_PATH), settings[L"menu"][sel][L"path"].asString().c_str());
-					Edit_SetText(dlgItem(IDC_MENU_ARGS), settings[L"menu"][sel][L"args"].asString().c_str());
-					ComboBox_SetText(dlgItem(IDC_MENU_VERB), settings[L"menu"][sel][L"verb"].asString().c_str());
-					Button_SetCheck(dlgItem(IDC_MENU_HIDDEN), settings[L"menu"][sel][L"hidden"].asNumber() != 0);
+					Edit_SetText(dlgItem(IDC_MENU_NAME), _settings[L"menu"][sel][L"name"].asString().c_str());
+					Edit_SetText(dlgItem(IDC_MENU_PATH), _settings[L"menu"][sel][L"path"].asString().c_str());
+					Edit_SetText(dlgItem(IDC_MENU_ARGS), _settings[L"menu"][sel][L"args"].asString().c_str());
+					ComboBox_SetText(dlgItem(IDC_MENU_VERB), _settings[L"menu"][sel][L"verb"].asString().c_str());
+					Button_SetCheck(dlgItem(IDC_MENU_HIDDEN), _settings[L"menu"][sel][L"hidden"].asNumber() != 0);
 					Button_Enable(dlgItem(IDC_MENU_UP), sel > 0);
 					Button_Enable(dlgItem(IDC_MENU_DOWN), sel + 1 < ListBox_GetCount(dlgItem(IDC_MENU_ITEMS)));
 					break;
@@ -641,7 +641,7 @@ namespace
 					ListBox_DeleteString(list, sel);
 					ListBox_InsertString(list, sel, name);
 					ListBox_SetCurSel(list, sel);
-					settings[L"menu"][sel][L"name"] = Value::string(name);
+					_settings[L"menu"][sel][L"name"] = Value::string(name);
 				}
 				break;
 			}
@@ -653,7 +653,7 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel >= 0)
 				{
-					settings[L"menu"][sel][L"path"] = Value::string(name);
+					_settings[L"menu"][sel][L"path"] = Value::string(name);
 				}
 				break;
 			}
@@ -665,7 +665,7 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel >= 0)
 				{
-					settings[L"menu"][sel][L"args"] = Value::string(name);
+					_settings[L"menu"][sel][L"args"] = Value::string(name);
 				}
 				break;
 			}
@@ -677,7 +677,7 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel >= 0)
 				{
-					settings[L"menu"][sel][L"verb"] = Value::string(name);
+					_settings[L"menu"][sel][L"verb"] = Value::string(name);
 				}
 				break;
 			}
@@ -687,7 +687,7 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel >= 0)
 				{
-					settings[L"menu"][sel][L"hidden"] = Value::number(Button_GetCheck(dlgItem(IDC_MENU_HIDDEN)) ? 1 : 0);
+					_settings[L"menu"][sel][L"hidden"] = Value::number(Button_GetCheck(dlgItem(IDC_MENU_HIDDEN)) ? 1 : 0);
 				}
 				break;
 			}
@@ -698,11 +698,11 @@ namespace
 				auto item = Value::object();
 				item[L"name"] = Value::string(L"");
 				item[L"path"] = Value::string(L"");
-				if (!settings.has(L"menu"))
+				if (!_settings.has(L"menu"))
 				{
-					settings[L"menu"] = Value::array();
+					_settings[L"menu"] = Value::array();
 				}
-				settings[L"menu"].push(item);
+				_settings[L"menu"].push(item);
 				ListBox_SetCurSel(list, index);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_MENU_ITEMS, LBN_SELCHANGE), 0);
 				Button_Enable(dlgItem(IDC_MENU_REMOVE), TRUE);
@@ -716,7 +716,7 @@ namespace
 			}
 			case IDC_MENU_REMOVE:
 			{
-				auto count = settings[L"menu"].length();
+				auto count = _settings[L"menu"].length();
 				if (count)
 				{
 					if (MessageBox(hwndDlg, L"Remove menu item?", L"Remove menu item", MB_OKCANCEL | MB_ICONWARNING) == IDOK)
@@ -724,7 +724,7 @@ namespace
 						auto list = dlgItem(IDC_MENU_ITEMS);
 						auto sel = ListBox_GetCurSel(list);
 						ListBox_DeleteString(list, sel);
-						settings[L"menu"].remove(size_t(sel));
+						_settings[L"menu"].remove(size_t(sel));
 						if (sel < int(count) - 1)
 						{
 							ListBox_SetCurSel(list, sel);
@@ -750,9 +750,9 @@ namespace
 				auto sel = ListBox_GetCurSel(list);
 				if (sel > 0)
 				{
-					std::swap(settings[L"menu"][sel], settings[L"menu"][sel - 1]);
+					std::swap(_settings[L"menu"][sel], _settings[L"menu"][sel - 1]);
 					ListBox_DeleteString(list, sel - 1);
-					ListBox_InsertString(list, sel, settings[L"menu"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"menu"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel - 1);
 					if (sel == 1)
 					{
@@ -769,9 +769,9 @@ namespace
 				auto count = ListBox_GetCount(list);
 				if (sel + 1 < count)
 				{
-					std::swap(settings[L"menu"][sel], settings[L"menu"][sel + 1]);
+					std::swap(_settings[L"menu"][sel], _settings[L"menu"][sel + 1]);
 					ListBox_DeleteString(list, sel + 1);
-					ListBox_InsertString(list, sel, settings[L"menu"][sel][L"name"].asString().c_str());
+					ListBox_InsertString(list, sel, _settings[L"menu"][sel][L"name"].asString().c_str());
 					ListBox_SetCurSel(list, sel + 1);
 					if (sel + 2 >= count)
 					{
@@ -792,7 +792,7 @@ namespace
 
 bool ShowSettingsDialog(HWND parent, SettingsPage defaultPage)
 {
-	auto s = parse(dump(settings::settings()).c_str());
+	_settings = parse(dump(settings::settings()).c_str());
 
 	PROPSHEETPAGE page;
 	ZeroMemory(&page, sizeof(page));
@@ -823,7 +823,7 @@ bool ShowSettingsDialog(HWND parent, SettingsPage defaultPage)
 	header.nStartPage = defaultPage;
 	if (PropertySheet(&header) > 0)
 	{
-		settings::setSettings(s);
+		settings::setSettings(_settings);
 		return true;
 	}
 	return false;

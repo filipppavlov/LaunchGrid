@@ -84,7 +84,7 @@ namespace
 			{
 				auto from = next;
 				next = PathFindNextComponent(next);
-				paths.push_back(std::wstring(from, next - 1));
+				paths.push_back(std::wstring(from, *next ? next - 1 : next));
 			}
 
 			if (begin < 0)

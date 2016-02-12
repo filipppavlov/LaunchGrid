@@ -34,6 +34,11 @@ BOOL CALLBACK findDefView(HWND wnd, LPARAM param)
 
 HWND getRealDesktop()
 {
+	auto progman = FindWindow(L"Progman", nullptr);
+	if (progman)
+	{
+		return progman;
+	}
 	auto explorer = FindWindow(L"WorkerW", nullptr);
 	EnumWindows(&findDefView, reinterpret_cast<LPARAM>(&explorer));
 	return explorer;
@@ -41,9 +46,11 @@ HWND getRealDesktop()
 
 HWND createTransparentWindow(HINSTANCE hInstance, int nCmdShow, const wchar_t* className)
 {
-	auto hWnd = CreateWindowEx(WS_EX_NOACTIVATE, className, L"", WS_POPUP,
-		0, 0, 100, 100, getRealDesktop(), nullptr, hInstance, nullptr);
-	return hWnd;
+	auto parent = getRealDesktop();
+	auto wnd = CreateWindowEx(WS_EX_NOACTIVATE, className, L"", WS_POPUP,
+		0, 0, 100, 100, parent, nullptr, hInstance, nullptr);
+	SetParent(wnd, parent);
+	return wnd;
 }
 
 INT_PTR CALLBACK about(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -552,7 +559,7 @@ LRESULT MainWindow::wndProc(UINT message, WPARAM wParam, LPARAM lParam)
 			m_inDialog = false;
 			break;
 		case IDM_EXIT:
-			DestroyWindow(m_wnd);
+			PostQuitMessage(0);
 			break;
 		case IDM_SETTINGS:
 		{
@@ -610,12 +617,10 @@ LRESULT MainWindow::wndProc(UINT message, WPARAM wParam, LPARAM lParam)
 		SetTextColor(draw->hDC, theme::color(theme::TEXT));
 		DrawText(draw->hDC, L"\xe10c", 1, &draw->rcItem, DT_CENTER | DT_VCENTER);
 		SelectObject(draw->hDC, oldFont);
+
 		DeleteObject(brush);
 		break;
 	}
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
 	case WM_ACTIVATEAPP:
 		if (!m_inDialog && wParam == FALSE && settings::settings()[L"general"][L"bottomWindow"].asNumber() == 0)
 		{
