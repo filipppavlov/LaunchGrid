@@ -203,9 +203,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Data.h" />
     <ClInclude Include="LaunchGrid.h" />
     <ClInclude Include="Logging.h" />
@@ -242,9 +239,7 @@
     <ResourceCompile Include="LaunchGrid.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="bitmap1.bmp" />
     <Image Include="LaunchGrid.ico" />
-    <Image Include="Resources\menu.png" />
     <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

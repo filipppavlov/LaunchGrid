@@ -68,6 +68,19 @@ INT_PTR CALLBACK about(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			return (INT_PTR)TRUE;
 		}
 		break;
+	case WM_NOTIFY:
+		switch (((LPNMHDR)lParam)->code)
+		{
+		case NM_CLICK:
+		case NM_RETURN:
+		{
+			PNMLINK pNMLink = (PNMLINK)lParam;
+			LITEM   item = pNMLink->item;
+			ShellExecute(NULL, L"open", item.szUrl, NULL, NULL, SW_SHOW);
+			break;
+		}
+		}
+		break;
 	}
 	return (INT_PTR)FALSE;
 }
@@ -94,13 +107,14 @@ MainWindow::MainWindow(HINSTANCE instance)
 	m_instance(instance),
 	m_emptyLink(nullptr)
 {
+	enableLogging(settings::settings()[L"general"][L"log"].asNumber() != 0);
+
 	LOG(L"creating MainWindow");
 
 	registerWindowClass(instance, loadString(instance, IDC_LAUNCHGRID).c_str());
 
 	m_wnd = createMainWindow();
 
-	m_buttonBackground = CreateSolidBrush(theme::color(theme::BACKGROUND));
 	createFonts();
 
 	LOG(L"creating static controls");
@@ -135,11 +149,6 @@ void MainWindow::createFonts()
 	metrics.lfCaptionFont.lfHeight = 18;
 	metrics.lfCaptionFont.lfWeight = FW_BOLD;
 	m_tabFont = CreateFontIndirect(&metrics.lfCaptionFont);
-
-	wcscpy_s(metrics.lfCaptionFont.lfFaceName, L"Segoe UI Symbol");
-	metrics.lfCaptionFont.lfHeight = -18;
-	metrics.lfCaptionFont.lfWeight = FW_NORMAL;
-	m_menuButtonFont = CreateFontIndirect(&metrics.lfCaptionFont);
 }
 
 HWND MainWindow::createMainWindow()
@@ -366,6 +375,7 @@ void MainWindow::unregisterAutorun()
 
 void MainWindow::applySettings()
 {
+	enableLogging(settings::settings()[L"general"][L"log"].asNumber() != 0);
 	for (auto tab : m_tabs)
 	{
 		DestroyWindow(tab);
@@ -414,9 +424,6 @@ void MainWindow::applySettings()
 		}
 		unregisterAutorun();
 	}
-
-	DeleteObject(m_buttonBackground);
-	m_buttonBackground = CreateSolidBrush(theme::color(theme::BACKGROUND));
 
 	createControls();
 	InvalidateRect(m_wnd, nullptr, TRUE);
@@ -512,17 +519,15 @@ LRESULT MainWindow::wndProc(UINT message, WPARAM wParam, LPARAM lParam)
 		SetBkColor(reinterpret_cast<HDC>(wParam), theme::color(theme::BACKGROUND));
 		return (LRESULT)GetStockObject(NULL_BRUSH);
 	case WM_CTLCOLORBTN:
-		return (LRESULT)m_buttonBackground;
+		return (LRESULT)theme::brush(theme::BACKGROUND);
 	case WM_ERASEBKGND:
 	{
 		HDC dc = HDC(wParam);
 		RECT r;
 		GetClientRect(m_wnd, &r);
-		SelectObject(dc, m_buttonBackground);
-		auto pen = CreatePen(PS_SOLID, 0, theme::color(theme::LINE));
-		SelectObject(dc, pen);
+		SelectObject(dc, theme::brush(theme::BACKGROUND));
+		SelectObject(dc, theme::pen(theme::LINE));
 		Rectangle(dc, r.left, r.top, r.right, r.bottom);
-		DeleteObject(pen);
 		return 1;
 	}
 	case WM_MENUCOMMAND:
@@ -610,15 +615,13 @@ LRESULT MainWindow::wndProc(UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_DRAWITEM:
 	{
 		auto draw = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
-		auto brush = CreateSolidBrush(theme::color(theme::BACKGROUND));
-		FillRect(draw->hDC, &draw->rcItem, brush);
-		auto oldFont = SelectObject(draw->hDC, m_menuButtonFont);
-		SetBkColor(draw->hDC, theme::color(theme::BACKGROUND));
-		SetTextColor(draw->hDC, theme::color(theme::TEXT));
-		DrawText(draw->hDC, L"\xe10c", 1, &draw->rcItem, DT_CENTER | DT_VCENTER);
-		SelectObject(draw->hDC, oldFont);
-
-		DeleteObject(brush);
+		FillRect(draw->hDC, &draw->rcItem, theme::brush(theme::BACKGROUND));
+		SelectPen(draw->hDC, theme::pen(theme::TEXT));
+		SelectBrush(draw->hDC, theme::brush(theme::TEXT));
+		const int radius = 4;
+		Ellipse(draw->hDC, 0, 12, radius, 12 + radius);
+		Ellipse(draw->hDC, 8, 12, radius + 8, 12 + radius);
+		Ellipse(draw->hDC, 16, 12, radius + 16, 12 + radius);
 		break;
 	}
 	case WM_ACTIVATEAPP:

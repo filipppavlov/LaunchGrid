@@ -11,4 +11,6 @@ namespace theme
 	};
 
 	COLORREF color(Element);
+	HBRUSH brush(Element);
+	HPEN pen(Element);
 }

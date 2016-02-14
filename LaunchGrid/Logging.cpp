@@ -3,8 +3,22 @@
 #include "Settings.h"
 #include <varargs.h>
 
+namespace
+{
+bool s_enableLogging = false;
+}
+
+void enableLogging(bool enable)
+{
+	s_enableLogging = enable;
+}
+
 void log(const wchar_t* format, ...)
 {
+	if (!s_enableLogging)
+	{
+		return;
+	}
 	auto dir = settings::settingsDirectory();
 	CreateDirectory(dir.c_str(), nullptr);
 	auto file = CreateFile((dir + L"\\log.txt").c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);

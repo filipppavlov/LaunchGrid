@@ -30,10 +30,8 @@ private:
 	std::vector<HWND> m_tabs;
 	HWND m_parent;
 	bool m_inDialog;
-	HBRUSH m_buttonBackground;
 
 	HFONT m_titleFont;
-	HFONT m_menuButtonFont;
 	HFONT m_tabFont;
 
 	std::vector<Table*> m_tables;

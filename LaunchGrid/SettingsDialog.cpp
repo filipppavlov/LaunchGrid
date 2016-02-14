@@ -10,7 +10,7 @@ namespace
 	Value _settings;
 
 
-	BOOL CALLBACK AppearenceProc(HWND hwndDlg,
+	BOOL CALLBACK GeneralProc(HWND hwndDlg,
 		UINT message,
 		WPARAM wParam,
 		LPARAM lParam) {
@@ -33,6 +33,7 @@ namespace
 			}
 			bool darkTheme = _settings[L"general"][L"theme"].asNumber() != 0;
 			Button_SetCheck(dlgItem(darkTheme ? IDC_DARK_THEME : IDC_LIGHT_THEME), TRUE);
+			Button_SetCheck(dlgItem(IDC_LOG), _settings[L"general"][L"log"].asNumber() != 0);
 			return TRUE;
 		}
 		case WM_COMMAND:
@@ -56,6 +57,9 @@ namespace
 			case IDC_LIGHT_THEME:
 			case IDC_DARK_THEME:
 				_settings.setDefault(L"general", Value::object())[L"theme"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_DARK_THEME) ? 1.0 : 0.0);
+				break;
+			case IDC_LOG:
+				_settings.setDefault(L"general", Value::object())[L"log"] = Value::number(IsDlgButtonChecked(hwndDlg, IDC_LOG) ? 1.0 : 0.0);
 				break;
 			default:
 				return FALSE;
@@ -174,6 +178,8 @@ namespace
 				ListBox_SetCurSel(list, index);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_TABS, LBN_SELCHANGE), 0);
 				Button_Enable(dlgItem(IDC_TAB_REMOVE), TRUE);
+				SetFocus(dlgItem(IDC_TAB_NAME));
+				Edit_SetSel(dlgItem(IDC_TAB_NAME), 0, Edit_GetTextLength(dlgItem(IDC_TAB_NAME)));
 				break;
 			}
 			case IDC_TAB_REMOVE:
@@ -318,6 +324,8 @@ namespace
 				ListBox_AddString(dlgItem(IDC_FLAGS), L"name");
 				ListBox_SetCurSel(dlgItem(IDC_FLAGS), _settings[L"tabs"][tab][L"flags"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_FLAGS, LBN_SELCHANGE), 0);
+				SetFocus(dlgItem(IDC_FLAG_NAME));
+				Edit_SetSel(dlgItem(IDC_FLAG_NAME), 0, Edit_GetTextLength(dlgItem(IDC_FLAG_NAME)));
 				break;
 			}
 			case ID_FLAG_DIRECTORY:
@@ -331,6 +339,8 @@ namespace
 				ListBox_AddString(dlgItem(IDC_FLAGS), L"name");
 				ListBox_SetCurSel(dlgItem(IDC_FLAGS), _settings[L"tabs"][tab][L"flags"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_FLAGS, LBN_SELCHANGE), 0);
+				SetFocus(dlgItem(IDC_FLAG_NAME));
+				Edit_SetSel(dlgItem(IDC_FLAG_NAME), 0, Edit_GetTextLength(dlgItem(IDC_FLAG_NAME)));
 				break;
 			}
 			case ID_FLAG_FILE:
@@ -344,6 +354,8 @@ namespace
 				ListBox_AddString(dlgItem(IDC_FLAGS), L"name");
 				ListBox_SetCurSel(dlgItem(IDC_FLAGS), _settings[L"tabs"][tab][L"flags"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_FLAGS, LBN_SELCHANGE), 0);
+				SetFocus(dlgItem(IDC_FLAG_NAME));
+				Edit_SetSel(dlgItem(IDC_FLAG_NAME), 0, Edit_GetTextLength(dlgItem(IDC_FLAG_NAME)));
 				break;
 			}
 			case IDC_FLAG_REMOVE:
@@ -450,6 +462,8 @@ namespace
 				ListBox_AddString(dlgItem(IDC_VALUES), L"name");
 				ListBox_SetCurSel(dlgItem(IDC_VALUES), _settings[L"tabs"][tab][L"flags"][flag][L"values"].length() - 1);
 				SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_VALUES, LBN_SELCHANGE), 0);
+				SetFocus(dlgItem(IDC_VALUE_NAME));
+				Edit_SetSel(dlgItem(IDC_VALUE_NAME), 0, Edit_GetTextLength(dlgItem(IDC_VALUE_NAME)));
 				break;
 			}
 			case IDC_VALUE_REMOVE:
@@ -712,6 +726,7 @@ namespace
 				ComboBox_Enable(dlgItem(IDC_MENU_VERB), TRUE);
 				Button_Enable(dlgItem(IDC_MENU_HIDDEN), TRUE);
 				SetFocus(dlgItem(IDC_MENU_NAME));
+				Edit_SetSel(dlgItem(IDC_MENU_NAME), 0, Edit_GetTextLength(dlgItem(IDC_MENU_NAME)));
 				break;
 			}
 			case IDC_MENU_REMOVE:
@@ -799,8 +814,8 @@ bool ShowSettingsDialog(HWND parent, SettingsPage defaultPage)
 	page.dwSize = sizeof(page);
 	page.dwFlags = PSP_DEFAULT;
 	page.hInstance = GetModuleHandle(nullptr);
-	page.pszTemplate = MAKEINTRESOURCE(IDD_APPEARENCE);
-	page.pfnDlgProc = &AppearenceProc;
+	page.pszTemplate = MAKEINTRESOURCE(IDD_GENERAL);
+	page.pfnDlgProc = &GeneralProc;
 
 	HPROPSHEETPAGE pages[3];
 	pages[0] = CreatePropertySheetPage(&page);

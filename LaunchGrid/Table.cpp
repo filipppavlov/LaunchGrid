@@ -2,7 +2,6 @@
 #include "Table.h"
 #include "Settings.h"
 #include "Themes.h"
-#include <shellapi.h>
 
 namespace
 {
@@ -295,16 +294,28 @@ void Table::mergeCells()
 				}
 				for (size_t r1 = row + 1; r1 < m_rowCount; ++r1)
 				{
-					options.clear();
-					getTableOptions(int(column), int(r1), options);
-					auto str1 = app->expandValue(options[app], options);
-					auto arg1 = app->arguments(options[app], options);
-					if (str0 != str1 || arg0 != arg1)
+					bool rowOk = true;
+					for (size_t c1 = column; c1 < column + cell.columnSpan; ++c1)
 					{
-						break;
+						options.clear();
+						getTableOptions(int(c1), int(r1), options);
+						auto str1 = app->expandValue(options[app], options);
+						auto arg1 = app->arguments(options[app], options);
+						if (str0 != str1 || arg0 != arg1)
+						{
+							rowOk = false;
+							break;
+						}
 					}
-					cell.rowSpan += 1;
-					m_table[column + r1 * m_columnCount].spanFrom = &cell;
+					if (rowOk)
+					{
+						for (size_t c1 = column; c1 < column + cell.columnSpan; ++c1)
+						{
+							cell.rowSpan += 1;
+							m_table[c1 + r1 * m_columnCount].spanFrom = &cell;
+						}
+						cell.rowSpan -= 1;
+					}
 				}
 			}
 		}
@@ -706,14 +717,12 @@ LRESULT CALLBACK Table::tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		auto hdc = BeginPaint(hWnd, &ps);
 		auto table = reinterpret_cast<Table*>(GetWindowLong(hWnd, GWL_USERDATA));
 
-		auto pen = CreatePen(PS_SOLID, 0, theme::color(theme::LINE));
-		SelectObject(hdc, pen);
+		SelectObject(hdc, theme::pen(theme::LINE));
 		for (auto& r : table->m_lines)
 		{
 			MoveToEx(hdc, r.left, r.top, nullptr);
 			LineTo(hdc, r.right, r.bottom);
 		}
-		DeleteObject(pen);
 		EndPaint(hWnd, &ps);
 		return 0;
 	}

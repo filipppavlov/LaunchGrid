@@ -13,6 +13,7 @@
 #include <windows.h>
 #include <Windowsx.h>
 #include <Shlobj.h>
+#include <shellapi.h>
 
 // C RunTime Header Files
 #include <stdlib.h>
