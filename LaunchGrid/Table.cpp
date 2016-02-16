@@ -481,17 +481,21 @@ void Table::renderTable()
 						width += columnWidth[column + x];
 					}
 					RECT r = { left, top, left + width, top + height };
-					auto style = cell.rowHeader ? SS_RIGHT : SS_CENTER;
-					style |= cell.headerFlag == 0 ? SS_NOTIFY : 0;
-					auto c = CreateWindow(L"STATIC", cell.headerFlag ? cell.headerFlag->value(cell.headerValue).name.c_str() : L"Run", WS_CHILD | WS_VISIBLE | SS_CENTERIMAGE | style, left + padding.cx, top + padding.cy, width - 2 * padding.cx, height - 2 * padding.cy, m_tableWnd, nullptr, m_instance, nullptr);
-					SetWindowLong(c, GWL_USERDATA, column + row * m_columnCount);
-					if (!cell.headerFlag)
+					if (cell.headerFlag)
 					{
+						auto style = cell.rowHeader ? SS_RIGHT : SS_CENTER;
+						auto c = CreateWindow(L"STATIC", cell.headerFlag ? cell.headerFlag->value(cell.headerValue).name.c_str() : L"Run", WS_CHILD | WS_VISIBLE | SS_CENTERIMAGE | style, left + padding.cx, top + padding.cy, width - 2 * padding.cx, height - 2 * padding.cy, m_tableWnd, nullptr, m_instance, nullptr);
+						SendMessage(c, WM_SETFONT, (WPARAM)m_titleFont, 0);
+					}
+					else
+					{
+						auto c = CreateWindow(L"BUTTON", cell.headerFlag ? cell.headerFlag->value(cell.headerValue).name.c_str() : L"Run", WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | BS_CENTER, left + padding.cx, top + padding.cy, width - 2 * padding.cx, height - 2 * padding.cy, m_tableWnd, nullptr, m_instance, nullptr);
+						SetWindowLong(c, GWL_USERDATA, column + row * m_columnCount);
 						s_staticProc = (WNDPROC)GetWindowLong(c, GWL_WNDPROC);
 						SetWindowLong(c, GWL_WNDPROC, (LONG)&LinkProc);
 						SetWindowLong(c, GWL_ID, ID_LAUNCH);
+						SendMessage(c, WM_SETFONT, (WPARAM)m_linkFont, 0);
 					}
-					SendMessage(c, WM_SETFONT, (WPARAM)(cell.columnHeader || cell.rowHeader ? m_titleFont : m_linkFont), 0);
 				}
 			}
 			left += columnWidth[column];
@@ -705,25 +709,80 @@ void Table::cellClicked(int x, int y)
 	}
 }
 
+void Table::onPaint()
+{
+	PAINTSTRUCT ps;
+	auto hdc = BeginPaint(m_tableWnd, &ps);
+
+	SelectObject(hdc, theme::pen(theme::LINE));
+	for (auto& r : m_lines)
+	{
+		MoveToEx(hdc, r.left, r.top, nullptr);
+		LineTo(hdc, r.right, r.bottom);
+	}
+	EndPaint(m_tableWnd, &ps);
+}
+
+void Table::onLaunch(HWND button)
+{
+	auto userData = GetWindowLong(button, GWL_USERDATA);
+	auto x = userData % m_columnCount;
+	auto y = userData / m_columnCount;
+	cellClicked(x, y);
+}
+
+void Table::onComboChange()
+{
+	auto selects = simplejson::Value::object();
+	for (auto p : m_selects)
+	{
+		selects[p.first->displayName()] = simplejson::Value::string(p.first->value(ComboBox_GetCurSel(p.second)).name.c_str());
+	}
+	settings::cache().setDefault(L"tabSelects", simplejson::Value::array())[m_tab] = selects;
+	settings::saveCache();
+}
+
+void Table::onDrawButton(const DRAWITEMSTRUCT* draw)
+{
+	auto length = GetWindowTextLength(draw->hwndItem);
+	wchar_t shortBuffer[256];
+	wchar_t* longBuffer = nullptr;
+	wchar_t* buffer;
+	if (length >= sizeof(shortBuffer) / sizeof(wchar_t))
+	{
+		longBuffer = new wchar_t[length + 1];
+		GetWindowText(draw->hwndItem, longBuffer, length + 1);
+		buffer = longBuffer;
+	}
+	else
+	{
+		GetWindowText(draw->hwndItem, shortBuffer, sizeof(shortBuffer) / sizeof(wchar_t));
+		buffer = shortBuffer;
+	}
+	FillRect(draw->hDC, &draw->rcItem, theme::brush(theme::BACKGROUND));
+	auto style = GetWindowLong(draw->hwndItem, GWL_STYLE);
+	SetBkColor(draw->hDC, theme::color(theme::BACKGROUND));
+	SetTextColor(draw->hDC, theme::color(theme::TEXT));
+	auto rect = draw->rcItem;
+	if (draw->itemState & ODS_FOCUS)
+	{
+		rect.left += 1;
+		rect.top += 1;
+	}
+	DrawText(draw->hDC, buffer, -1, &rect, DT_SINGLELINE | DT_CENTER);
+	delete[] longBuffer;
+}
+
 LRESULT CALLBACK Table::tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	auto table = reinterpret_cast<Table*>(GetWindowLong(hWnd, GWL_USERDATA));
 	switch (message)
 	{
 	case WM_ERASEBKGND:
 		return FALSE;
 	case WM_PAINT:
 	{
-		PAINTSTRUCT ps;
-		auto hdc = BeginPaint(hWnd, &ps);
-		auto table = reinterpret_cast<Table*>(GetWindowLong(hWnd, GWL_USERDATA));
-
-		SelectObject(hdc, theme::pen(theme::LINE));
-		for (auto& r : table->m_lines)
-		{
-			MoveToEx(hdc, r.left, r.top, nullptr);
-			LineTo(hdc, r.right, r.bottom);
-		}
-		EndPaint(hWnd, &ps);
+		table->onPaint();
 		return 0;
 	}
 	case WM_SETCURSOR:
@@ -739,11 +798,7 @@ LRESULT CALLBACK Table::tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		{
 		case ID_LAUNCH:
 		{
-			auto table = reinterpret_cast<Table*>(GetWindowLong(hWnd, GWL_USERDATA));
-			auto userData = GetWindowLong(HWND(lParam), GWL_USERDATA);
-			auto x = userData % table->m_columnCount;
-			auto y = userData / table->m_columnCount;
-			table->cellClicked(x, y);
+			table->onLaunch(HWND(lParam));
 			break;
 		}
 		case ID_COMBO:
@@ -751,20 +806,18 @@ LRESULT CALLBACK Table::tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			{
 			case LBN_SELCHANGE:
 			{
-				auto table = reinterpret_cast<Table*>(GetWindowLong(hWnd, GWL_USERDATA));
-				auto selects = simplejson::Value::object();
-				for (auto p : table->m_selects)
-				{
-					selects[p.first->displayName()] = simplejson::Value::string(p.first->value(ComboBox_GetCurSel(p.second)).name.c_str());
-				}
-
-				settings::cache().setDefault(L"tabSelects", simplejson::Value::array())[table->m_tab] = selects;
-				settings::saveCache();
+				table->onComboChange();
 				break;
 			}
 			}
 			break;
 		}
+		break;
+	}
+	case WM_DRAWITEM:
+	{
+		auto draw = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+		table->onDrawButton(draw);
 		break;
 	}
 	default:

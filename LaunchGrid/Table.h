@@ -48,6 +48,11 @@ private:
 	void getTableOptions(int x, int y, std::map<BaseOption*, size_t>& options);
 	static LRESULT CALLBACK tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+	void onPaint();
+	void onLaunch(HWND button);
+	void onComboChange();
+	void onDrawButton(const DRAWITEMSTRUCT* draw);
+
 	HINSTANCE m_instance;
 	size_t m_tab;
 	HWND m_tableWnd;
