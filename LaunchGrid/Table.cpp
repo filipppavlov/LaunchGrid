@@ -647,7 +647,18 @@ void Table::launch(const wchar_t* verb, const wchar_t* command, const wchar_t* a
 	{
 		showCommand = SW_SHOW;
 	}
-	auto result = ShellExecute(GetParent(m_tableWnd), verb, command, arguments, nullptr, showCommand);
+
+	auto fileName = PathFindFileName(command);
+	std::wstring directory;
+	if (fileName != command)
+	{
+		directory = std::wstring(command, fileName - command);
+		if (!PathFileExists(directory.c_str()) || !PathIsDirectory(directory.c_str()))
+		{
+			directory.clear();
+		}
+	}
+	auto result = ShellExecute(GetParent(m_tableWnd), verb, command, arguments, directory.empty() ? nullptr : directory.c_str(), showCommand);
 	if (int(result) < 32)
 	{
 		LPTSTR error = NULL;

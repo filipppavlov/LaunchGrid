@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "Data.h"
-#include <Shlwapi.h>
 
 namespace
 {
