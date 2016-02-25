@@ -2,6 +2,7 @@
 #include "Table.h"
 #include "Settings.h"
 #include "Themes.h"
+#include "resource.h"
 
 namespace
 {
@@ -784,6 +785,58 @@ void Table::onDrawButton(const DRAWITEMSTRUCT* draw)
 	delete[] longBuffer;
 }
 
+void Table::onContextMenu(HWND button, WORD x, WORD y)
+{
+	if (GetWindowLong(button, GWL_ID) == ID_LAUNCH)
+	{
+		auto menu = LoadMenu(m_instance, MAKEINTRESOURCE(IDR_POPUP));
+		auto userData = GetWindowLong(button, GWL_USERDATA);
+		m_trackedCell.first = userData % m_columnCount;
+		m_trackedCell.second = userData / m_columnCount;
+		TrackPopupMenu(GetSubMenu(menu, 0), 0, x, y, 0, m_tableWnd, nullptr);
+		DestroyMenu(menu);
+	}
+}
+
+void Table::onCopy()
+{
+	std::map<BaseOption*, size_t> options;
+	getTableOptions(m_trackedCell.first, m_trackedCell.second, options);
+	for (auto p : m_selects)
+	{
+		options[p.first] = ComboBox_GetCurSel(p.second);
+	}
+	AppOption* app = nullptr;
+	for (auto o : options)
+	{
+		if (auto a = dynamic_cast<AppOption*>(o.first))
+		{
+			auto cmdLine = a->expandValue(o.second, options);
+			if (cmdLine.find(L' ') != cmdLine.npos)
+			{
+				cmdLine = L"\"" + cmdLine + L"\"";
+			}
+			auto arguments = a->arguments(o.second, options);
+			if (!arguments.empty())
+			{
+				cmdLine += L" ";
+				cmdLine += arguments;
+			}
+
+			auto size = sizeof(wchar_t) * (cmdLine.length() + 1);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, size);
+			memcpy(GlobalLock(hMem), cmdLine.c_str(), size);
+			GlobalUnlock(hMem);
+			OpenClipboard(0);
+			EmptyClipboard();
+			SetClipboardData(CF_UNICODETEXT, hMem);
+			CloseClipboard();
+
+			break;
+		}
+	}
+}
+
 LRESULT CALLBACK Table::tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	auto table = reinterpret_cast<Table*>(GetWindowLong(hWnd, GWL_USERDATA));
@@ -822,6 +875,9 @@ LRESULT CALLBACK Table::tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			}
 			}
 			break;
+		case ID_COPY:
+			table->onCopy();
+			break;
 		}
 		break;
 	}
@@ -829,6 +885,11 @@ LRESULT CALLBACK Table::tableProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 	{
 		auto draw = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
 		table->onDrawButton(draw);
+		break;
+	}
+	case WM_CONTEXTMENU:
+	{
+		table->onContextMenu((HWND)wParam, LOWORD(lParam), HIWORD(lParam));
 		break;
 	}
 	default:

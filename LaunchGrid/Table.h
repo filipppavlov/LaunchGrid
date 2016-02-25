@@ -52,6 +52,8 @@ private:
 	void onLaunch(HWND button);
 	void onComboChange();
 	void onDrawButton(const DRAWITEMSTRUCT* draw);
+	void onContextMenu(HWND button, WORD x, WORD y);
+	void onCopy();
 
 	HINSTANCE m_instance;
 	size_t m_tab;
@@ -69,4 +71,5 @@ private:
 	int m_width;
 	int m_height;
 	size_t m_rowHeaders, m_columnHeaders;
+	std::pair<unsigned, unsigned> m_trackedCell;
 };
