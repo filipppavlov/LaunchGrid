@@ -10,6 +10,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "LaunchGridInstaller", "LaunchGridInstaller\LaunchGridInstaller.wixproj", "{E44EDC86-71E1-4543-BBAC-41D3D80FE742}"
+	ProjectSection(ProjectDependencies) = postProject
+		{196A7D29-02A3-4081-A2C1-63D17734C407} = {196A7D29-02A3-4081-A2C1-63D17734C407}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -26,6 +31,12 @@ Global
 		{196A7D29-02A3-4081-A2C1-63D17734C407}.Release|x64.Build.0 = Release|x64
 		{196A7D29-02A3-4081-A2C1-63D17734C407}.Release|x86.ActiveCfg = Release|Win32
 		{196A7D29-02A3-4081-A2C1-63D17734C407}.Release|x86.Build.0 = Release|Win32
+		{E44EDC86-71E1-4543-BBAC-41D3D80FE742}.Debug|x64.ActiveCfg = Debug|x86
+		{E44EDC86-71E1-4543-BBAC-41D3D80FE742}.Debug|x86.ActiveCfg = Debug|x86
+		{E44EDC86-71E1-4543-BBAC-41D3D80FE742}.Debug|x86.Build.0 = Debug|x86
+		{E44EDC86-71E1-4543-BBAC-41D3D80FE742}.Release|x64.ActiveCfg = Release|x86
+		{E44EDC86-71E1-4543-BBAC-41D3D80FE742}.Release|x86.ActiveCfg = Release|x86
+		{E44EDC86-71E1-4543-BBAC-41D3D80FE742}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

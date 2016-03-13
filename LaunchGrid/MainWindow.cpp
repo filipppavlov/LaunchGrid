@@ -318,7 +318,7 @@ ATOM MainWindow::registerWindowClass(HINSTANCE hInstance, const wchar_t* name)
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = name;
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_LAUNCHGRID));
 
 	return RegisterClassEx(&wcex);
 }
