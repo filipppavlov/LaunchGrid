@@ -4,7 +4,7 @@
 		<Package InstallerVersion="200" Compressed="yes" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-		<MediaTemplate />
+		<MediaTemplate EmbedCab="yes"/>
 
 		<Feature Id="ProductFeature" Title="LaunchGrid" Level="1">
 			<ComponentGroupRef Id="ProductComponents" />
